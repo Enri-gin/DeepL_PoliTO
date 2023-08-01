@@ -3,9 +3,6 @@ import subprocess
 import os 
 
 print('Folder corrente', os.getcwd())
-os.chdir('..')
-print('Folder corrente', os.getcwd())
-
 
 #repository_url = 'https://github.com/Enri-gin/MLandDL_polito.git'
 
@@ -13,15 +10,10 @@ print('Folder corrente', os.getcwd())
 #print('--Cartella git clonata')
 
 # Rimuovi la directory "sample_data"
-subprocess.run(['rm', '-r', 'sample_data'])
-
-os.chdir('..')
-
+# subprocess.run(['rm', '-r', 'sample_data'])
 
 # Esegui lo script di download COCO dataset
 subprocess.run(['bash', 'DownloadVWW/scripts/download_mscoco.sh', 'DownloadVWW/scripts'])
-
-
 
 print('--COCO dataset scaricato')
 
