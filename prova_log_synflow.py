@@ -1,15 +1,15 @@
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.optim import lr_scheduler
-import numpy as np
+# import torch
+# import torch.nn as nn
+# import torch.optim as optim
+# from torch.optim import lr_scheduler
+# import numpy as np
 import torchvision
-from torchvision import datasets, models, transforms
-import matplotlib.pyplot as plt
-import pyvww
-import time
-import os
-import copy
+# from torchvision import datasets, models, transforms
+# import matplotlib.pyplot as plt
+# import pyvww
+# import time
+# import os
+# import copy
 from zero_cost_nas.foresight.pruners.predictive import find_measures
 from function_and_classes.model_by_blocks import ModelByBlocks
 from function_and_classes.others import *
@@ -37,6 +37,10 @@ disable_batch_norm(model)
 
 measures = find_measures(model, dataloader, dataload_info=('random', n_batches, num_classes),
                          device=device, measure_names=measure_names)
+enable_batch_norm(model)
 
 score = measures['synflow']
 print(f'LogSynflow score = {score}')
+
+masc, n_param = get_macs_and_params(model, [16, 3, 96, 96])
+print(f'model has {masc:.2f} MACs and {n_param} parameters')
