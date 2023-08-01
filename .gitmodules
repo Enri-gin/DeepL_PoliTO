@@ -1,9 +1,6 @@
 [submodule "MLandDL_polito"]
 	path = MLandDL_polito
 	url = https://github.com/Enri-gin/MLandDL_polito.git
-[submodule "zero_cost_nas"]
-	path = zero_cost_nas
-	url = https://github.com/SamsungLabs/zero-cost-nas.git
 [submodule "DownloadVWW"]
 	path = DownloadVWW
 	url = https://github.com/Enri-gin/MLandDL_polito.git
