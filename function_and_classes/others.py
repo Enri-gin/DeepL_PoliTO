@@ -27,3 +27,4 @@ def get_macs_and_params(model: nn.Module, input_shape: list):
     input_ = torch.rand(input_shape, device=model_device)
     macs, params = profile(model, inputs=(input_,), verbose=False)
     return macs, params
+

@@ -1,7 +1,14 @@
-def train_model(model, criterion, optimizer, scheduler, num_epochs=5):
+import torch
+import torch.nn as nn
+
+
+def train_model(model: nn.Module, dataloaders: dict, criterion, optimizer, scheduler,
+                aug_fun=nn.Identity(), device=torch.device("cpu"), num_epochs=5):
 
     import time
     import copy
+
+    dataset_sizes = {'train': len(dataloaders['train']), 'val': len(dataloaders['val'])}
 
     since = time.time()
 
@@ -18,14 +25,14 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=5):
             if phase == 'train':
                 model.train()  # Set model to training mode
             else:
-                model.eval()   # Set model to evaluate mode
+                model.eval()  # Set model to evaluate mode
 
             running_loss = 0.0
             running_corrects = 0
 
             for inputs, labels in dataloaders[phase]:
-                inputs = inputs.to(device)
-                labels = labels.to(device)
+                inputs = aug_fun(inputs.to(device))
+                labels = aug_fun(labels.to(device))
 
                 # forward
                 # track history if only in train
@@ -50,10 +57,9 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=5):
             epoch_loss = running_loss / dataset_sizes[phase]
             epoch_acc = running_corrects.double() / dataset_sizes[phase]
 
-            
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                 phase, epoch_loss, epoch_acc))
-            
+
             # deep copy the model
             if phase == 'val' and epoch_acc > best_acc:
                 best_acc = epoch_acc
@@ -62,7 +68,6 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=5):
         time_epoch = time.time() - start_training_epoch
         print('Epoch training time: {:.0f}m {:.0f}s'.format(time_epoch // 60, time_epoch % 60))
         print()
-
 
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(
