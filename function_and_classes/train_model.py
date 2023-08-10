@@ -2,9 +2,8 @@ import torch
 import torch.nn as nn
 
 
-def train_model(model: nn.Module, dataloaders: dict, criterion, optimizer, scheduler,
-                aug_fun=nn.Identity(), device=torch.device("cpu"), num_epochs=5):
-
+def train_model(model: nn.Module, dataloaders: dict, criterion, optimizer,
+                scheduler, device=torch.device("cpu"), num_epochs=5):
     import time
     import copy
 
@@ -31,8 +30,8 @@ def train_model(model: nn.Module, dataloaders: dict, criterion, optimizer, sched
             running_corrects = 0
 
             for inputs, labels in dataloaders[phase]:
-                inputs = aug_fun(inputs.to(device))
-                labels = aug_fun(labels.to(device))
+                inputs = inputs.to(device)
+                labels = labels.to(device)
 
                 # forward
                 # track history if only in train
@@ -59,7 +58,6 @@ def train_model(model: nn.Module, dataloaders: dict, criterion, optimizer, sched
 
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                 phase, epoch_loss, epoch_acc))
-
             # deep copy the model
             if phase == 'val' and epoch_acc > best_acc:
                 best_acc = epoch_acc
