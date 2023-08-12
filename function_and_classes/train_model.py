@@ -72,10 +72,8 @@ def train_model(model: nn.Module, dataloaders: dict, dataset_sizes: dict, criter
     print('Best val Acc: {:4f}'.format(best_acc))
 
     if torch.cuda.current_device():
-        model.cpu()
         inputs.to(torch.device("cpu"))
         labels.to(torch.device("cpu"))
-        del model
         del inputs
         del labels
         gc.collect()
