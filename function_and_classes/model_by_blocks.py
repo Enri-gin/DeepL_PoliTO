@@ -10,18 +10,36 @@ class ModelByBlocks(nn.Module):
         prev_channel = 3
         for blocco in seq_block:
             if blocco[0] == 'c':  # Abbiamo un blocco ConvNext
-                _, out_channel, kernel_size, exp_fact = blocco
-                self.blocks.append(ConvNeXtBlock(prev_channel, out_channel,
-                                                 kernel_size=kernel_size,
-                                                 expansion_factor=exp_fact))
-                prev_channel = out_channel
+                if len(blocco) == 5:
+
+                    _, out_channel, kernel_size, exp_fact, stride = blocco
+                    self.blocks.append(ConvNeXtBlock(prev_channel, out_channel,
+                                                     kernel_size=kernel_size,
+                                                     expansion_factor=exp_fact, stride=stride))
+                    prev_channel = out_channel
+
+                else:
+                    _, out_channel, kernel_size, exp_fact = blocco
+                    self.blocks.append(ConvNeXtBlock(prev_channel, out_channel,
+                                                     kernel_size=kernel_size,
+                                                     expansion_factor=exp_fact))
+                    prev_channel = out_channel
 
             if blocco[0] == 'i':  # Abbiamo una inverted bottleneck (mobile net v3)
-                _, out_channel, kernel_size, exp_fact = blocco
-                self.blocks.append(Bottleneck_V3(prev_channel, out_channel,
-                                                 kernel_size=kernel_size,
-                                                 expansion_factor=exp_fact))
-                prev_channel = out_channel
+                if len(blocco) == 5:
+
+                    _, out_channel, kernel_size, exp_fact, stride = blocco
+                    self.blocks.append(Bottleneck_V3(prev_channel, out_channel,
+                                                     kernel_size=kernel_size,
+                                                     expansion_factor=exp_fact, stride=stride))
+                    prev_channel = out_channel
+
+                else:
+                    _, out_channel, kernel_size, exp_fact = blocco
+                    self.blocks.append(Bottleneck_V3(prev_channel, out_channel,
+                                                     kernel_size=kernel_size,
+                                                     expansion_factor=exp_fact))
+                    prev_channel = out_channel
 
             # Global Average Pooling
             self.global_avg_pool = nn.AdaptiveAvgPool2d(1)
