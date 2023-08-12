@@ -27,7 +27,7 @@ data_fake = datasets.CIFAR10(".\data", train=False,
 
 batch_size = 2
 dataloader = torch.utils.data.DataLoader(data_fake, batch_size=batch_size, shuffle=True)
-dataloaders = {'train': dataloader}
+dataloaders = {'train': dataloader, 'val': dataloader}
 
 hand_model = ModelByBlocks([['i', 32, 5, 1], ['c', 64, 5, 1],
                               ['i', 64, 5, 3], ['i', 128, 3, 2],
