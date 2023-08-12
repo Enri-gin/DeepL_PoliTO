@@ -2,12 +2,11 @@ import torch
 import torch.nn as nn
 
 
-def train_model(model: nn.Module, dataloaders: dict, criterion, optimizer,
+def train_model(model: nn.Module, dataloaders: dict, dataset_sizes: dict, criterion, optimizer,
                 scheduler, device=torch.device("cpu"), num_epochs=5):
     import time
     import copy
-
-    dataset_sizes = {'train': len(dataloaders['train']), 'val': len(dataloaders['val'])}
+    import gc
 
     since = time.time()
 
@@ -71,6 +70,16 @@ def train_model(model: nn.Module, dataloaders: dict, criterion, optimizer,
     print('Training complete in {:.0f}m {:.0f}s'.format(
         time_elapsed // 60, time_elapsed % 60))
     print('Best val Acc: {:4f}'.format(best_acc))
+
+    if torch.cuda.current_device():
+        model.cpu()
+        inputs.to(torch.device("cpu"))
+        labels.to(torch.device("cpu"))
+        del model
+        del inputs
+        del labels
+        gc.collect()
+        torch.cuda.empty_cache()
 
     # load best model weights
     model.load_state_dict(best_model_wts)
