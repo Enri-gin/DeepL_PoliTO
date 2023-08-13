@@ -1,5 +1,5 @@
 from torch import nn
-from .Blocks import Bottleneck_V3, ConvNeXtBlock
+from .Blocks import InvertedResidual, ConvNeXtBlock
 
 
 class ModelByBlocks(nn.Module):
@@ -29,16 +29,17 @@ class ModelByBlocks(nn.Module):
                 if len(blocco) == 5:
 
                     _, out_channel, kernel_size, exp_fact, stride = blocco
-                    self.blocks.append(Bottleneck_V3(prev_channel, out_channel,
-                                                     kernel_size=kernel_size,
-                                                     expansion_factor=exp_fact, stride=stride))
+                    self.blocks.append(InvertedResidual(prev_channel, out_channel,
+                                                        kernel_size=kernel_size,
+                                                        expansion_factor=exp_fact,
+                                                        stride=stride))
                     prev_channel = out_channel
 
                 else:
                     _, out_channel, kernel_size, exp_fact = blocco
-                    self.blocks.append(Bottleneck_V3(prev_channel, out_channel,
-                                                     kernel_size=kernel_size,
-                                                     expansion_factor=exp_fact))
+                    self.blocks.append(InvertedResidual(prev_channel, out_channel,
+                                                        kernel_size=kernel_size,
+                                                        expansion_factor=exp_fact))
                     prev_channel = out_channel
 
             # Global Average Pooling

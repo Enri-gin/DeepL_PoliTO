@@ -2,84 +2,120 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class Bottleneck_V3(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, expansion_factor=4, stride=1, reduction_ratio=4,
-                 dropout_prob=0.2):
-        super(Bottleneck_V3, self).__init__()
-        self.use_residual = (stride == 1 and in_channels == out_channels)
-        self.DoBatchNorm = True
+def _make_divisible(v, divisor, min_value=None):
+    """
+    This function ensures that all layers have a channel number that is divisible by 8
+    :param v:
+    :param divisor:
+    :param min_value:
+    :return:
+    """
+    if min_value is None:
+        min_value = divisor
+    new_v = max(min_value, int(v + divisor / 2) // divisor * divisor)
+    # Make sure that round down does not go down by more than 10%.
+    if new_v < 0.9 * v:
+        new_v += divisor
+    return new_v
 
-        # Pointwise expansion
-        mid_channels = in_channels * expansion_factor
-        self.conv1 = nn.Conv2d(in_channels, mid_channels, kernel_size=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(mid_channels)
-        self.act1 = nn.Hardswish()
 
-        # Depthwise convolution
-        self.conv2 = nn.Conv2d(mid_channels, mid_channels, kernel_size, stride=stride, padding=(kernel_size - 1) // 2,
-                               groups=mid_channels, bias=False)
-        self.bn2 = nn.BatchNorm2d(mid_channels)
-        self.act2 = nn.Hardswish()
-
-        # Squeeze-and-excitation
-        squeeze_channels = max(1, in_channels // reduction_ratio)
-        self.se_conv1 = nn.Conv2d(mid_channels, squeeze_channels, kernel_size=1)
-        self.se_act1 = nn.Hardswish()
-        self.se_conv2 = nn.Conv2d(squeeze_channels, mid_channels, kernel_size=1)
-        self.se_act2 = nn.Sigmoid()
-
-        # Pointwise linear projection
-        self.conv3 = nn.Conv2d(mid_channels, out_channels, kernel_size=1, bias=False)
-        self.bn3 = nn.BatchNorm2d(out_channels)
-
-        # Dropout
-        self.dropout = nn.Dropout2d(dropout_prob)
+class h_sigmoid(nn.Module):
+    def __init__(self, inplace=True):
+        super(h_sigmoid, self).__init__()
+        self.relu = nn.ReLU6(inplace=inplace)
 
     def forward(self, x):
-        identity = x
+        return self.relu(x + 3) / 6
 
-        out = self.conv1(x)
 
-        if self.DoBatchNorm:
-            out = self.bn1(out)
+class h_swish(nn.Module):
+    def __init__(self, inplace=True):
+        super(h_swish, self).__init__()
+        self.sigmoid = h_sigmoid(inplace=inplace)
 
-        out = self.act1(out)
+    def forward(self, x):
+        return x * self.sigmoid(x)
 
-        out = self.conv2(out)
 
-        if self.DoBatchNorm:
-            out = self.bn2(out)
+class SELayer(nn.Module):
+    def __init__(self, channel, reduction=4):
+        super(SELayer, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(channel, _make_divisible(channel // reduction, 8)),
+            nn.ReLU(inplace=True),
+            nn.Linear(_make_divisible(channel // reduction, 8), channel),
+            h_sigmoid()
+        )
 
-        out = self.act2(out)
+    def forward(self, x):
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1)
+        return x * y
 
-        # Squeeze-and-excitation
-        se = F.avg_pool2d(out, out.size(2))
-        se = self.se_conv1(se)
-        se = self.se_act1(se)
-        se = self.se_conv2(se)
-        se = self.se_act2(se)
-        out = out * se
 
-        out = self.conv3(out)
+def conv_3x3_bn(in_channels, out_channels, stride):
+    return nn.Sequential(
+        nn.Conv2d(in_channels, out_channels, 3, stride, 1, bias=False),
+        nn.BatchNorm2d(out_channels),
+        h_swish()
+    )
 
-        if self.DoBatchNorm:
-            out = self.bn3(out)
 
-        # Dropout
-        if self.dropout.p != 0:
-            out = self.dropout(out)
+def conv_1x1_bn(inp, oup):
+    return nn.Sequential(
+        nn.Conv2d(inp, oup, 1, 1, 0, bias=False),
+        nn.BatchNorm2d(oup),
+        h_swish()
+    )
 
-        if self.use_residual:
-            out += identity
 
-        out = F.hardswish(out)
-        return out
+class InvertedResidual(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size=3, expansion_factor=4, stride=1, use_se=1, use_hs=1):
+        super(InvertedResidual, self).__init__()
+        assert stride in [1, 2]
 
-    def disable_bn(self):
-        self.DoBatchNorm = False
+        self.identity = stride == 1 and in_channels == out_channels
 
-    def enable_bn(self):
-        self.DoBatchNorm = True
+        hidden_dim = in_channels * expansion_factor
+
+        if expansion_factor == 1:
+            self.conv = nn.Sequential(
+                # dw
+                nn.Conv2d(hidden_dim, hidden_dim, kernel_size, stride, (kernel_size - 1) // 2, groups=hidden_dim,
+                          bias=False),
+                nn.BatchNorm2d(hidden_dim),
+                h_swish() if use_hs else nn.ReLU(inplace=True),
+                # Squeeze-and-Excite
+                SELayer(hidden_dim) if use_se else nn.Identity(),
+                # pw-linear
+                nn.Conv2d(hidden_dim, out_channels, 1, 1, 0, bias=False),
+                nn.BatchNorm2d(out_channels),
+            )
+        else:
+            self.conv = nn.Sequential(
+                # pw
+                nn.Conv2d(in_channels, hidden_dim, 1, 1, 0, bias=False),
+                nn.BatchNorm2d(hidden_dim),
+                h_swish() if use_hs else nn.ReLU(inplace=True),
+                # dw
+                nn.Conv2d(hidden_dim, hidden_dim, kernel_size, stride, (kernel_size - 1) // 2, groups=hidden_dim,
+                          bias=False),
+                nn.BatchNorm2d(hidden_dim),
+                # Squeeze-and-Excite
+                SELayer(hidden_dim) if use_se else nn.Identity(),
+                h_swish() if use_hs else nn.ReLU(inplace=True),
+                # pw-linear
+                nn.Conv2d(hidden_dim, out_channels, 1, 1, 0, bias=False),
+                nn.BatchNorm2d(out_channels),
+            )
+
+    def forward(self, x):
+        if self.identity:
+            return x + self.conv(x)
+        else:
+            return self.conv(x)
 
 
 class ConvNeXtBlock(nn.Module):
