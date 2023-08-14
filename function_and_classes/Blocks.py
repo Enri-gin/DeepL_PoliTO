@@ -133,8 +133,8 @@ class ConvNeXtBlock(nn.Module):
         # 1x1 convolution with expansion factor
         self.pointwise_conv = nn.Linear(in_channels, out_channels * expansion_factor)
 
-        # GELU activation
-        self.gelu = nn.GELU()
+        # RELU activation
+        self.relu = nn.ReLU()
 
         # 1x1 convolution to restore output size
         self.restore_conv = nn.Linear(out_channels * expansion_factor, out_channels)
@@ -150,8 +150,8 @@ class ConvNeXtBlock(nn.Module):
         out = self.linear_norm(out)
         # 1x1 convolution with expansion
         out = self.pointwise_conv(out)
-        # GELU activation
-        out = self.gelu(out)
+        # RELU activation
+        out = self.relu(out)
         # 1x1 convolution to restore output size
         out = self.restore_conv(out)
         # Re-permute
