@@ -54,3 +54,11 @@ def get_macs_and_params(model: nn.Module, input_shape: list):
     input_ = torch.rand(input_shape, device=model_device)
     macs, params = profile(model, inputs=(input_,), verbose=False)
     return macs, params
+
+
+def respect_constraints(model: nn.Module, max_params=2_500_000, max_flops=200_000_000, dim_image=96) -> bool:
+    macs, n_params = get_macs_and_params(model, [1, 3, dim_image, dim_image])
+    if n_params <= max_params and macs*2 <= max_flops:
+        return True
+    else:
+        return False

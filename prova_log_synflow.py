@@ -24,9 +24,6 @@ dataloader = torch.utils.data.DataLoader(data_fake, batch_size=batch_size, shuff
 my_model = ModelByBlocks([['i', 32, 7, 1], ['c', 32, 5, 1], ['i', 64, 5, 3],
                           ['i', 256, 3, 2], ['c', 256, 7, 4]])
 
-# my_model2 = ModelByBlocks([['i', 128, 7, 1], ['c', 128, 5, 1], ['i', 64, 5, 3],
-#                             ['i', 256, 3, 2], ['c', 256, 7, 4],
-#                             ['i', 32, 3, 2], ['i', 32, 3, 2]])
 
 
 num_classes = 2
