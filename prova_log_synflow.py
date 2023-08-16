@@ -1,5 +1,5 @@
-# import torch
-# import torch.nn as nn
+import torch
+import torch.nn as nn
 # import torch.optim as optim
 # from torch.optim import lr_scheduler
 # import numpy as np
@@ -12,8 +12,6 @@ import torchvision
 # import copy
 from zero_cost_nas.foresight.pruners.predictive import find_measures
 from function_and_classes.model_by_blocks import ModelByBlocks
-from function_and_classes.others import *
-from NASWOT import compute_NASWOT
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 data_fake = torchvision.datasets.CIFAR10(".\data", train=False,
