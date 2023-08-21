@@ -26,11 +26,12 @@ data_fake = datasets.CIFAR10(".\data", train=False,
 batch_size = 2
 dataloader = torch.utils.data.DataLoader(data_fake, batch_size=batch_size, shuffle=True)
 dataloaders = {'train': dataloader, 'val': dataloader}
+datasizes = {'train': len(data_fake), 'val': len(data_fake)}
 
-hand_model = ModelByBlocks([['i', 32, 5, 1], ['c', 64, 5, 1],
-                              ['i', 64, 5, 3], ['i', 128, 3, 2],
-                              ['c', 128, 7, 4], ['i', 256, 3, 2],
-                              ['c', 256, 3, 2]])
+# hand_model = ModelByBlocks([['i', 64, 7, 2, 2], ['c', 32, 3, 1, 2], ['i', 128, 3, 4, 2], ['c', 128, 4, 1, 1],
+#                             ['i', 64, 5, 3, 1], ['c', 128, 3, 3, 1], ['c', 128, 3, 1, 1], ['i', 256, 5, 1, 2],
+#                             ['i', 32, 3, 4, 1], ['i', 256, 7, 4, 2]])
+hand_model = ModelByBlocks([['i', 128, 3, 4, 2], ['c', 128, 3, 1, 1]])
 
 # augmentation_function = T.RandAugment(num_ops=2, magnitude=8)
 
@@ -38,5 +39,5 @@ criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(hand_model.parameters(), lr=0.05)
 scheduler = lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.1)
 
-fitted_hand_model = train_model(hand_model, dataloaders, criterion, optimizer,
+fitted_hand_model = train_model(hand_model, dataloaders, datasizes, criterion, optimizer,
                                 scheduler, device=device, num_epochs=5)

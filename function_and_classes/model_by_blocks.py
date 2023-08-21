@@ -42,11 +42,11 @@ class ModelByBlocks(nn.Module):
                                                         expansion_factor=exp_fact))
                     prev_channel = out_channel
 
-            # Global Average Pooling
-            self.global_avg_pool = nn.AdaptiveAvgPool2d(1)
+        # Global Average Pooling
+        self.global_avg_pool = nn.AdaptiveAvgPool2d(1)
 
-            # Fully Connected Layer
-            self.fc = nn.Linear(prev_channel, 2)
+        # Fully Connected Layer
+        self.fc = nn.Linear(prev_channel, 2)
 
     def forward(self, x):
         x = self.blocks(x)
