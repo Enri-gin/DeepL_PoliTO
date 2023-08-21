@@ -3,6 +3,9 @@ import torch
 from thop import profile
 from torch import nn
 import random
+import copy
+from NASWOT import compute_naswot_score
+from zero_cost_nas.foresight.pruners.predictive import find_measures
 
 
 def generate_random_block():
@@ -90,7 +93,7 @@ def generate_mutation(best_model: nn.Module):
 
     prev_channel = seq_to_mute[j - 1][1]
 
-    seq_to_mute[j][1] += random.choice([-4, -3, -2, -1, 1, 2, 3, 4])  # Channels mutation
+    seq_to_mute[j][1] += random.choice([-40, -30, -20, -10, 10, 20, 30, 40])  # Channels mutation
     seq_to_mute[j][2] += random.choice([-2, 0, 2])  # Kernel size mutation
     seq_to_mute[j][3] += random.choice([-1, 0, 1])  # Modifying the expansion factor
 
@@ -108,8 +111,10 @@ def generate_mutation(best_model: nn.Module):
     if seq_to_mute[j][4] >= 3: seq_to_mute[j][4] = 2  # Making sure stride is less than 3
     if seq_to_mute[j][2] <= 0: seq_to_mute[j][2] = 3  # Making sure the kernel size is positive
 
-    if seq_to_mute[j][1] <= prev_channel: seq_to_mute[j][1] = prev_channel
+    if seq_to_mute[j][1] >= 256: seq_to_mute[j][1] = 256  # Making sure the output channels size is less than 256
+    if seq_to_mute[j][1] <= 32: seq_to_mute[j][1] = 32  # Making sure the output channels size is bigger than 32
 
+    if seq_to_mute[j][1] <= prev_channel: seq_to_mute[j][1] = prev_channel
     # if torch.rand(1).item() < pr:
     #   # aggiungi blocco
     # print('Original Sequence:', best_model.seq_block)

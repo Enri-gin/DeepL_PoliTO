@@ -15,7 +15,7 @@ def train_model(model: nn.Module, dataloaders: dict, dataset_sizes: dict, criter
 
     for epoch in range(num_epochs):
         start_training_epoch = time.time()
-        print('Epoch {}/{}'.format(epoch, num_epochs - 1))
+        print('Epoch {}/{}'.format(epoch+1, num_epochs))
         print('-' * 10)
 
         # Each epoch has a training and validation phase
