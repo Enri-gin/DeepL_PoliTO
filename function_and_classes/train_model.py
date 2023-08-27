@@ -9,9 +9,16 @@ def train_model(model: nn.Module, dataloaders: dict, dataset_sizes: dict, criter
     import gc
 
     since = time.time()
+    dict_stats = {}
 
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
+
+    train_loss = []
+    val_loss = []
+
+    train_acc = []
+    val_acc = []
 
     for epoch in range(num_epochs):
         start_training_epoch = time.time()
@@ -55,6 +62,14 @@ def train_model(model: nn.Module, dataloaders: dict, dataset_sizes: dict, criter
             epoch_loss = running_loss / dataset_sizes[phase]
             epoch_acc = running_corrects.double() / dataset_sizes[phase]
 
+            if phase == 'train':
+                train_loss.append(epoch_loss)
+                train_acc.append(epoch_acc)
+
+            if phase == 'val':
+                val_loss.append(epoch_loss)
+                val_acc.append(epoch_acc)
+
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                 phase, epoch_loss, epoch_acc))
             # deep copy the model
@@ -71,7 +86,7 @@ def train_model(model: nn.Module, dataloaders: dict, dataset_sizes: dict, criter
         time_elapsed // 60, time_elapsed % 60))
     print('Best val Acc: {:4f}'.format(best_acc))
 
-    if torch.cuda.current_device():
+    if torch.cuda.current_device(): # deleting inputs if using torch cuda
         inputs.to(torch.device("cpu"))
         labels.to(torch.device("cpu"))
         del inputs
@@ -81,4 +96,11 @@ def train_model(model: nn.Module, dataloaders: dict, dataset_sizes: dict, criter
 
     # load best model weights
     model.load_state_dict(best_model_wts)
-    return model
+
+    dict_stats['Training Accuracy'] = train_acc
+    dict_stats['Validation Accuracy'] = val_acc
+
+    dict_stats['Training Loss'] = train_loss
+    dict_stats['Validation Loss'] = val_loss
+
+    return model, dict_stats
