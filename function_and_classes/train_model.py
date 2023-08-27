@@ -64,7 +64,7 @@ def train_model(model: nn.Module, dataloaders: dict, dataset_sizes: dict, criter
 
             if phase == 'train':
                 train_loss.append(epoch_loss)
-                train_acc.append(epoch_acc.item)
+                train_acc.append(epoch_acc.item())
 
             if phase == 'val':
                 val_loss.append(epoch_loss)
