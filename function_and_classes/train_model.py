@@ -64,11 +64,11 @@ def train_model(model: nn.Module, dataloaders: dict, dataset_sizes: dict, criter
 
             if phase == 'train':
                 train_loss.append(epoch_loss)
-                train_acc.append(epoch_acc)
+                train_acc.append(epoch_acc.item)
 
             if phase == 'val':
                 val_loss.append(epoch_loss)
-                val_acc.append(epoch_acc)
+                val_acc.append(epoch_acc.item())
 
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                 phase, epoch_loss, epoch_acc))
