@@ -67,9 +67,7 @@ def respect_constraints(model: nn.Module, max_params=2_500_000, max_flops=200_00
         return False
 
 
-def generate_mutation(best_model: nn.Module, n_mutation=2):
-    seq_to_mute = copy.deepcopy(best_model.seq_block)
-
+def mutate(seq_to_mute, n_mutation=2):
     for _ in range(n_mutation):
         j = random.choice(range(len(seq_to_mute)))
 

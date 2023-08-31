@@ -11,64 +11,7 @@ import time
 import warnings
 import random
 import json
-
-
-def find_best_model(population: nn.ModuleList, inp, target, dataloader):
-    """Score the population of the genetic algorithm according
-    to the FreeRea score function"""
-    num_classes = 2
-    measure_names = ['synflow']
-    n_batches = 2
-    score_syn = []
-    score_nas = []
-    for model in population:
-        measures = find_measures(model, dataloader, dataload_info=('random', n_batches, num_classes),
-                                 device=device, measure_names=measure_names)
-
-        score_syn.append(measures['synflow'])
-        score_nas.append(compute_naswot_score(model, inp, target, device))
-    _, best_index = calculate_fitness(score_syn, score_nas, 1)
-    return best_index
-
-
-def generate_mutation(best_model: nn.Module):
-    pr = 0.0  # Probabilità aggiunta blocco
-
-    seq_to_mute = copy.deepcopy(best_model.seq_block)
-    j = random.choice(range(len(seq_to_mute)))
-    # print(j, seq_to_mute[j])
-
-    prev_channel = seq_to_mute[j - 1][1]
-
-    seq_to_mute[j][1] += random.choice([-40, -30, -20, -10, 10, 20, 30, 40])  # Channels mutation
-    seq_to_mute[j][2] += random.choice([-2, 0, 2])  # Kernel size mutation
-    seq_to_mute[j][3] += random.choice([-1, 0, 1])  # Modifying the expansion factor
-
-    if len(seq_to_mute[j]) == 5:  # if there is also the stride
-        seq_to_mute[j][4] += random.choice([-1, 0, 1])
-    else:
-        seq_to_mute[j].append(random.choice([1, 2]))
-
-    for k in range(j, len(seq_to_mute)):  # Making sure the number of channels along the network is not decreasing
-        if seq_to_mute[k][1] < seq_to_mute[j][1]:
-            seq_to_mute[k][1] = seq_to_mute[j][1]
-
-    if seq_to_mute[j][3] <= 0: seq_to_mute[j][3] = 1  # Making sure exp_factor is positive
-    if seq_to_mute[j][4] <= 0: seq_to_mute[j][4] = 1  # Making sure stride is positive
-    if seq_to_mute[j][4] >= 3: seq_to_mute[j][4] = 2  # Making sure stride is less than 3
-    if seq_to_mute[j][2] <= 0: seq_to_mute[j][2] = 3  # Making sure the kernel size is positive
-
-    if seq_to_mute[j][1] >= 256: seq_to_mute[j][1] = 256  # Making sure the output channels size is less than 256
-    if seq_to_mute[j][1] <= 32: seq_to_mute[j][1] = 32  # Making sure the output channels size is bigger than 32
-
-    if seq_to_mute[j][1] <= prev_channel: seq_to_mute[j][1] = prev_channel
-    # if torch.rand(1).item() < pr:
-    #   # aggiungi blocco
-    # print('Original Sequence:', best_model.seq_block)
-    # print('Mutated Sequence: ', seq_to_mute)
-    # print()
-    return seq_to_mute
-
+import gc
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -87,61 +30,111 @@ data_fake = datasets.CIFAR10(r"C:\Users\Enrico\DeepLProject\data", train=False,
                              download=False)
 
 batch_size = 2
-dataloader = torch.utils.data.DataLoader(data_fake, batch_size=batch_size, shuffle=True)
-
-inputs, target = next(iter(dataloader))
+dataloader_train = torch.utils.data.DataLoader(data_fake, batch_size=batch_size, shuffle=True)
 
 # Initialization
-M = 50
-r = 0.2
-Tmax = 20
-S = int(np.ceil(r * M))
-p = 2
-history = 0
-count = 0
-population = nn.ModuleList()
-ages = []
-m = 0
-with open(r'C:\Users\Enrico\DeepLProject\Models\history_random.json') as f:
-    search_space = json.load(f)
-for string in search_space:
-    m += 1
-    if m == M:
-        break
-    population.append(ModelByBlocks(string))
-    ages.append(0)
+P = 50
+C = 40
+n_blocks = 7
+S = 5  # sub-sample random
+seed_value = 42
+n_blocks = 10
+dim_image = 96
+count_crossover = 0
+num_classes = 2
+measure_names = ['synflow']
 
+with open(r'C:\Users\Enrico\DeepLProject\Models\Initial_population.json') as f_json:
+    initial_population = json.load(f_json)
+x, target = next(iter(dataloader_train))
+# Disabilita tutti i messaggi di avviso
 warnings.filterwarnings("ignore")
 
-# Algorithm
-while history < Tmax:
-    print(f"Iteration {history}/{Tmax}")
-    count = 0
-    while count < S:  # randomly discard S models
-        j = random.choice(range(len(population)))
-        del population[j]
-        del ages[j]
-        count += 1
-        # print(len(population))
+random_seed = 42
+random.seed(random_seed)
+history = []
+for i in range(P):
+    history.append(initial_population[i])
+print("Progression in percentage:")
 
-    count = 0
-    while count < p:
-        oldest_index = ages.index(max(ages))
-        del ages[oldest_index]
-        del population[oldest_index]
-        count += 1
+for i in range(C):
+    percent = (i / (C - 1)) * 100
+    print(f"\r{percent:.2f}%", end="")
+    time.sleep(0.001)  # Aggiungi un ritardo per simulare l'aggiornamento della barra
 
-    # Finding the best parent
-    j = find_best_model(population, inputs, target, dataloader)
-    best_model = population[j[0]]
-    while len(population) < M:
-        new_seq = generate_mutation(best_model)
-        print(new_seq)
-        new_model = ModelByBlocks(new_seq)
-        if respect_constraints(new_model):
-            population.append(new_model)
-            ages.append(0)
+    sample_S = random.sample(history[-P:], S)
+    score_sample_nas = []
+    score_sample_syn = []
 
-    # Increase all the ages and history counter
-    ages = [x + 1 for x in ages]
-    history += 1
+    for j in range(S):
+        model = ModelByBlocks(sample_S[j])
+        score_nas = compute_naswot_score(model, x, target, device)
+        score_sample_nas.append(score_nas)
+
+        measures = find_measures(model, dataloader_train,
+                                 dataload_info=('random', batch_size, num_classes),
+                                 device=device, measure_names=measure_names)
+        score_syn = np.log(measures['synflow'])
+        score_sample_syn.append(score_syn)
+
+        model.cpu()
+        del model
+        gc.collect()
+        torch.cuda.empty_cache()
+
+    NN = 2
+    _, list_index = calculate_fitness(score_sample_nas, score_sample_syn, NN)
+    parent1 = sample_S[list_index[0]]
+    parent2 = sample_S[list_index[1]]
+
+    parent_1 = copy.deepcopy(parent1)
+    parent_2 = copy.deepcopy(parent2)
+
+    crossover_1 = []
+    crossover_1.extend(parent_1[:int(n_blocks / 2)])
+    crossover_1.extend(parent_2[-int(n_blocks / 2):])
+
+    group = (i - 1) // int(C / 4)  # Calcola il gruppo di iterazioni (0, 1, 2, 3)
+    num_blocks_to_mutate = 4 - group
+
+    mod_cross_1 = ModelByBlocks(crossover_1)
+    if respect_constraints(mod_cross_1):
+        history.append(crossover_1)
+        count_crossover += 1
+    mod_cross_1.cpu()
+    del mod_cross_1
+    gc.collect()
+    torch.cuda.empty_cache()
+
+    mutation_1 = mutate(parent_1, n_mutation=num_blocks_to_mutate)
+    mod_mut_1 = ModelByBlocks(mutation_1)
+
+    while not respect_constraints(mod_mut_1):
+        mutation_1 = mutate(parent_1, n_mutation=num_blocks_to_mutate)
+        mod_mut_1 = ModelByBlocks(mutation_1)
+
+    history.append(mutation_1)
+    mod_mut_1.cpu()
+    del mod_mut_1
+    gc.collect()
+    torch.cuda.empty_cache()
+
+    mutation_2 = mutate(parent_2, n_mutation=num_blocks_to_mutate)
+    mod_mut_2 = ModelByBlocks(mutation_2)
+
+    while not respect_constraints(mod_mut_2):
+        mutation_2 = mutate(parent_2, n_mutation=num_blocks_to_mutate)
+        mod_mut_2 = ModelByBlocks(mutation_2)
+
+    history.append(mutation_2)
+    mod_mut_2.cpu()
+    del mod_mut_2
+    gc.collect()
+    torch.cuda.empty_cache()
+
+print()  # Vai a capo dopo aver completato la progressione
+print(count_crossover, 'accepted crossovers')
+print('Expected history lenght:', P+C*2+count_crossover)
+print('Actual Lenght', len(history))
+# Riabilita i messaggi di avviso
+warnings.resetwarnings()
