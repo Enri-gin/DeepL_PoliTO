@@ -34,9 +34,9 @@ dataloader_train = torch.utils.data.DataLoader(data_fake, batch_size=batch_size,
 
 # Initialization
 P = 50
-C = 40
-n_blocks = 7
-S = 5  # sub-sample random
+C = 100
+n_blocks = 10
+S = 6  # sub-sample random
 seed_value = 42
 n_blocks = 10
 dim_image = 96
@@ -44,7 +44,7 @@ count_crossover = 0
 num_classes = 2
 measure_names = ['synflow']
 
-with open(r'C:\Users\Enrico\DeepLProject\Models\Initial_population.json') as f_json:
+with open(r'/Models/population/Initial_population.json') as f_json:
     initial_population = json.load(f_json)
 x, target = next(iter(dataloader_train))
 # Disabilita tutti i messaggi di avviso
