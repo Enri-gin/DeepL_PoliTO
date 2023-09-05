@@ -2,8 +2,8 @@ import torch
 import torch as nn
 from NASWOT import compute_naswot_score
 from zero_cost_nas.foresight.pruners.predictive import find_measures
-from function_and_classes.model_by_blocks import ModelByBlocks
-from Training_Free.utils import *
+from Building_utils.model_by_blocks import ModelByBlocks
+from Genetic.utils import *
 from torchvision import datasets
 from torchvision import transforms as T
 import copy

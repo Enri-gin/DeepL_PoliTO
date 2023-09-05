@@ -5,7 +5,7 @@ import time
 import gc
 from utils import generate_random_list_of_lists
 from utils import get_macs_and_params, count_params
-from ..function_and_classes.model_by_blocks import ModelByBlocks
+from ..Building_utils.model_by_blocks import ModelByBlocks
 
 N_SEARCH = 1000
 seed_value = 42

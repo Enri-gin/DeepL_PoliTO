@@ -1,10 +1,10 @@
-from function_and_classes.model_by_blocks import ModelByBlocks
-from Training_Free.utils import *
+from Building_utils.model_by_blocks import ModelByBlocks
+from Genetic.utils import *
 from torchvision import datasets
 from torchvision import transforms as T
 import torch.nn
 from torch.optim import lr_scheduler
-from function_and_classes.train_model import train_model
+from Building_utils.train_model import train_model
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 

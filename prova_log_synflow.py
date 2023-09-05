@@ -11,7 +11,7 @@ import torchvision
 # import os
 # import copy
 from zero_cost_nas.foresight.pruners.predictive import find_measures
-from function_and_classes.model_by_blocks import ModelByBlocks
+from Building_utils.model_by_blocks import ModelByBlocks
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 data_fake = torchvision.datasets.CIFAR10(".\data", train=False,
