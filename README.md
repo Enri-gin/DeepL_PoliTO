@@ -40,7 +40,6 @@ The notebook presents different sections:
 - **Compute mean and std per channel :** section used to compute eman and std in order to normalize when loading data
 - **Load the data :** section used to create the Dataset and DataLoader objects
 - **Model By Hands :** section used to train the hand model
-- **Computing probabilities** section used to compute the per block acceptance probability when generating new random architectures
 - **Random Search :** section used to find and train the best model from the random search
 - **Genetic Algorithm :** section used to find and train the best model from the genetic algorithm
 - **Comparison with MobileNetV3 :** section when we train the two version of mobile nets and make comparisons
